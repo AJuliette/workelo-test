@@ -4,6 +4,8 @@ require 'pry'
 
 class Main
   def self.call
+    duration = 2
+  
     busy_slots_1 = get_busy_slots('./input_andy.json')
     busy_slots_2 =  get_busy_slots('./input_sandra.json')
 
@@ -24,9 +26,9 @@ class Main
     agenda_by_day_1 = group_by_day(agenda_of_the_week_1)
     agenda_by_day_2 = group_by_day(agenda_of_the_week_2)
 
-    matching_hours_for_meeting = matching_hours_for_meeting(agenda_by_day_1, agenda_by_day_2)
+    matching_hours_for_meeting = matching_hours_for_meeting(agenda_by_day_1, agenda_by_day_2, duration)
     
-    output = format_data_for_output(matching_hours_for_meeting)
+    output = format_data_for_output(matching_hours_for_meeting, duration)
     return_free_slots_for_meetings(output)
   end
 
@@ -84,19 +86,29 @@ class Main
     agenda_of_the_week.group_by{ |slot| slot["datetime"].strftime("%A") }.values
   end
 
-  def self.matching_hours_for_meeting(agenda_by_day_1, agenda_by_day_2)
+  def self.matching_hours_for_meeting(agenda_by_day_1, agenda_by_day_2, duration)
     (0...5).to_a.each_with_object([]) do |day_of_the_week, array|
       (0...9).to_a.each do |hour_of_day|
-        array << agenda_by_day_1[day_of_the_week][hour_of_day]["datetime"] if (agenda_by_day_1[day_of_the_week][hour_of_day]["busy"] == 0 && agenda_by_day_2[day_of_the_week][hour_of_day]["busy"] == 0)
+        array << hours_for_meeting(agenda_by_day_1, agenda_by_day_2, day_of_the_week, hour_of_day, duration)
       end
-    end
+    end.compact!
   end
 
-  def self.format_data_for_output(matching_hours_for_meeting)
+  def self.hours_for_meeting(agenda_by_day_1, agenda_by_day_2, day_of_the_week, hour_of_day, duration)
+    return unless hour_of_day + duration <= 9
+    array_of_multiple_hours_meeting = (hour_of_day...(hour_of_day + duration)).each_with_object([]) do |hour_of_day, array|
+      break if (agenda_by_day_1[day_of_the_week][hour_of_day]["busy"] == 1 || agenda_by_day_2[day_of_the_week][hour_of_day]["busy"] == 1)
+      array << agenda_by_day_1[day_of_the_week][hour_of_day]["datetime"] if (agenda_by_day_1[day_of_the_week][hour_of_day]["busy"] == 0 && agenda_by_day_2[day_of_the_week][hour_of_day]["busy"] == 0)
+    end
+    return if array_of_multiple_hours_meeting.nil?
+    agenda_by_day_1[day_of_the_week][hour_of_day]["datetime"] if array_of_multiple_hours_meeting.count == duration
+  end
+
+  def self.format_data_for_output(matching_hours_for_meeting, duration)
     matching_hours_for_meeting.map do |hour|
       { 
         "start": hour,
-        "end": hour + 1.hour
+        "end": hour + duration.send(:hour)
       }
     end
   end
