@@ -12,7 +12,7 @@ class Main
     busy_hours_1 = busy_hours(busy_slots_1)
     busy_hours_2 = busy_hours(busy_slots_2)
 
-    start_day = start_day(busy_slots_1, busy_slots_2)
+    start_day = start_day(busy_slots_1)
     end_day = end_day(start_day)
 
     calendar_of_hours_of_the_week = calendar_of_hours_of_the_week(start_day, end_day)
@@ -37,10 +37,9 @@ class Main
     JSON.parse(file)
   end
 
-  def self.start_day(busy_slots_1, busy_slots_2)
-    busy_slots = busy_slots_1 + busy_slots_2
-    busy_slots.sort { |a,b| a["start"] <=> b["start"] }
-    date = Date.parse(busy_slots.first["start"])
+  def self.start_day(busy_slots_1)
+    date = Date.parse(busy_slots_1.first["start"])
+    monday = date - (date.wday - 1) % 7
     hour = Time.parse("09:00:00").seconds_since_midnight.seconds
     date.to_datetime + hour
   end
